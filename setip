@@ -1,0 +1,136 @@
+#!/bin/sh
+# setip
+
+SELF_IP=`hostname -I`
+MASTER_IP=127.0.0.1
+
+usage()
+{
+	echo "Usage: setip [OPTION]... [IP]..."
+	echo ""
+	echo "Mandatory arguments to long options are mandatory for short options too"
+	echo ""
+	echo "Startup:"
+	echo '  -h, --help		print this help'
+	echo '  -m, --master		set IP address for master(roscore) only'
+	echo "			the IP of this machine will be set automatically"
+	echo "			to the hostname: ${SELF_IP}"
+	echo '  -a, --all		set IP addresses for master(roscore) and this machine'
+	echo "			format: setip [IP of master] [IP of this machine]"
+}
+
+err_arg()
+{
+	echo "Missing or invalid arguments."
+	echo ""
+	echo "Usage: setip [OPTION]... [IP]..."
+	echo "Try:"
+	echo ""
+	echo "	setip -h"
+	echo ""
+	echo "for more options."
+	exit
+}
+
+announce()
+{
+	echo ""
+	echo "Master IP set to: $1"
+	echo "Self IP set to: $2"
+}
+
+add_line()
+{
+	FILE=/etc/bash.bashrc
+	prop1="ROS_MASTER_URI"
+	prop2="ROS_HOSTNAME"
+	prop3="ROS_IP"
+	arg1=$1
+	arg2=$2
+	
+	if grep -Fq $prop1 ~/.bashrc ; then
+		lineNum=`busybox sed -n "/export ${prop1}/=" ~/.bashrc`
+		sudo sed -i "${lineNum} cexport ${prop1}=http://${arg1}:11311" ~/.bashrc
+	else
+		sudo echo "export $prop1=http://$arg1:11311" >> ~/.bashrc
+	fi
+	
+	if grep -Fq $prop2 ~/.bashrc ; then
+		lineNum=`busybox sed -n "/export ${prop2}/=" ~/.bashrc`
+		sudo sed -i "${lineNum} cexport ${prop2}=${arg2}" ~/.bashrc
+	else
+		sudo echo "export $prop2=$arg2" >> ~/.bashrc
+	fi
+	
+	if grep -Fq $prop3 ~/.bashrc ; then
+		lineNum=`busybox sed -n "/export ${prop3}/=" ~/.bashrc`
+		sudo sed -i "${lineNum} cexport ${prop3}=${arg2}" ~/.bashrc
+	else
+		sudo echo "export $prop3=$arg2" >> ~/.bashrc
+	fi
+	#######
+	if grep -Fq $prop1 $FILE ; then
+		lineNum=`busybox sed -n "/export ${prop1}/=" $FILE`
+		sudo sed -i "${lineNum} cexport ${prop1}=http://${arg1}:11311" $FILE
+	else
+		sudo sh -c "echo 'export $prop1=http://$arg1:11311' >> $FILE"
+	fi
+	
+	if grep -Fq $prop2 $FILE ; then
+		lineNum=`busybox sed -n "/export ${prop2}/=" $FILE`
+		sudo sed -i "${lineNum} cexport ${prop2}=${arg2}" $FILE
+	else
+		sudo sh -c "echo 'export $prop2=$arg2' >> $FILE"
+	fi
+	
+	if grep -Fq $prop3 $FILE ; then
+		lineNum=`busybox sed -n "/export ${prop3}/=" $FILE`
+		sudo sed -i "${lineNum} cexport ${prop3}=${arg2}" $FILE
+	else
+		sudo sh -c "echo 'export $prop3=$arg2' >> $FILE"
+	fi
+}
+
+set_ip()
+{
+	export ROS_MASTER_URI=http://${1}:11311
+	export ROS_HOSTNAME=${2}
+	export ROS_IP=${2}
+}
+
+set_master()
+{
+	if expr "$1" : '[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*$' >/dev/null; then
+		set_ip $1 $2
+		add_line $1 $2
+	else
+		err_arg
+	fi
+}
+
+set_all()
+{
+	if expr "$2" : '[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*$' >/dev/null; then
+		set_master $1 $2
+		set_ip $1 $2
+		add_line $1 $2
+	else
+		err_arg
+	fi
+}
+
+if [ "$1" = "" ]; then
+	err_arg
+else
+	case $1 in
+		-h | --help)	usage
+				;;
+		-m | --master)	set_master $2 $SELF_IP
+				announce $2 $SELF_IP
+				;;
+		-a | --all)	set_all $2 $3
+				announce $2 $3
+				;;
+		* )		err_arg
+	esac
+fi
