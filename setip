@@ -11,12 +11,12 @@ usage()
 	echo "Mandatory arguments to long options are mandatory for short options too"
 	echo ""
 	echo "Startup:"
-	echo '  -h, --help		print this help'
-	echo '  -m, --master		set IP address for master(roscore) only'
-	echo "			the IP of this machine will be set automatically"
-	echo "			to the hostname: ${SELF_IP}"
-	echo '  -a, --all		set IP addresses for master(roscore) and this machine'
-	echo "			format: setip [IP of master] [IP of this machine]"
+	echo '  -h, --help          print this help'
+	echo '  -m, --master        set IP address for master(roscore) only'
+	echo "                      the IP of this machine will be set automatically"
+	echo "                      to the hostname: ${SELF_IP}"
+	echo '  -a, --all           set IP addresses for master(roscore) and this machine'
+	echo "      format: setip [IP of master] [IP of this machine]"
 }
 
 err_arg()
